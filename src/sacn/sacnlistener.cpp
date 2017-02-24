@@ -24,7 +24,6 @@
 #include <QSharedPointer>
 #include <QWeakPointer>
 
-
 //The amount of ms to wait before a source is considered offline or
 //has stopped sending per-channel-priority packets
 #define WAIT_OFFLINE 2500
@@ -562,7 +561,7 @@ void sACNListener::performMerge()
 
 
     // Next, find highest level for the highest prioritized sources
-
+    QBitArray changes = QBitArray(512, false); //keep track of any changed addresses
     for(int i=0; i<number_of_addresses_to_merge; i++)
     {
         int address = addresses_to_merge[i];
@@ -573,6 +572,7 @@ void sACNListener::performMerge()
             m_merged_levels[address].level = -1;
             m_merged_levels[address].winningSource = NULL;
             m_merged_levels[address].otherSources.clear();
+            changes.setBit(address, true);
         }
         foreach(sACNSource *s, sourceList)
         {
@@ -581,12 +581,13 @@ void sACNListener::performMerge()
                 levels[address] = s->level_array[address];
                 m_merged_levels[address].level = levels[address];
                 m_merged_levels[address].winningSource = s;
+                changes.setBit(address, true);
             }
         }
     }
 
 
     // Tell people..
-    emit levelsChanged();
+    emit levelsChanged(changes);
 }
 

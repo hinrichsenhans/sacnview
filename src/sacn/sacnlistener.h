@@ -23,7 +23,7 @@
 #include <QElapsedTimer>
 #include <QPoint>
 #include "streamingacn.h"
-
+#include <QBitArray>
 
 struct sACNMergedAddress
 {
@@ -75,7 +75,7 @@ signals:
     void sourceFound(sACNSource *source);
     void sourceLost(sACNSource *source);
     void sourceChanged(sACNSource *source);
-    void levelsChanged();
+    void levelsChanged(const QBitArray changes);
     void dataReady(int address, QPointF data);
 private slots:
     void readPendingDatagrams();
