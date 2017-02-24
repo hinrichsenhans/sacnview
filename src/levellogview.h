@@ -15,6 +15,10 @@ public:
     explicit LevelLogView(QWidget *parent = 0);
     ~LevelLogView();
 
+public slots:
+    void clearLog();
+    void saveToFile();
+
 private:
     Ui::LevelLogView *ui;
 };

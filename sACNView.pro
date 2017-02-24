@@ -61,7 +61,8 @@ SOURCES += src/main.cpp\
     src/mergeduniverselogger.cpp \
     src/sacn/sacnuniverselistmodel.cpp \
     src/snapshot.cpp \
-    src/commandline.cpp
+    src/commandline.cpp \
+    src/levellogview.cpp
 	
 HEADERS  += src/mdimainwindow.h \
     src/scopewindow.h \
@@ -92,7 +93,8 @@ HEADERS  += src/mdimainwindow.h \
     src/sacn/sacnuniverselistmodel.h \
     src/snapshot.h \
     src/commandline.h \
-    src/fontdata.h
+    src/fontdata.h \
+    src/levellogview.h
 
 FORMS    += ui/mdimainwindow.ui \
     ui/scopewindow.ui \
@@ -102,7 +104,8 @@ FORMS    += ui/mdimainwindow.ui \
     ui/transmitwindow.ui \
     ui/configureperchanpriodlg.ui \
     ui/aboutdialog.ui \
-    ui/snapshot.ui
+    ui/snapshot.ui \
+    ui/levellogview.ui
 
 RESOURCES += \
     res/resources.qrc
