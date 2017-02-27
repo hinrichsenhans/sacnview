@@ -75,7 +75,8 @@ signals:
     void sourceFound(sACNSource *source);
     void sourceLost(sACNSource *source);
     void sourceChanged(sACNSource *source);
-    void levelsChanged(const QBitArray changes);
+    void levelsChanged();
+    void levelsChangedWithDiff(const QBitArray changes);
     void dataReady(int address, QPointF data);
 private slots:
     void readPendingDatagrams();

@@ -604,6 +604,7 @@ void sACNListener::performMerge()
 
 
     // Tell people..
-    emit levelsChanged(changes);
+    emit levelsChanged();
+    emit levelsChangedWithDiff(changes);
 }
 
