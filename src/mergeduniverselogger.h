@@ -41,7 +41,7 @@ public slots:
     void stop();
 
 private slots:
-    void levelsChanged();
+    void levelsChanged(const QBitArray changes);
 
 private:
     MergedUniverseLogger(MergedUniverseLogger & other) = delete;

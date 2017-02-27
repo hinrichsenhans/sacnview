@@ -30,7 +30,7 @@ public:
     bool flickerFinder() { return m_flickerFinder;};
 public slots:
     void setUniverse(int universe);
-    void levelsChanged();
+    void levelsChanged(const QBitArray changes);
     void pause();
     void setFlickerFinder(bool on);
 private:

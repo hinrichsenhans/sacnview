@@ -43,7 +43,7 @@ protected slots:
     void sourceOnline(sACNSource *source);
     void sourceOffline(sACNSource *source);
     void sourceChanged(sACNSource *source);
-    void levelsChanged();
+    void levelsChanged(const QBitArray changes);
     void selectedAddressChanged(int address);
     void on_btnStartFlickerFinder_pressed();
 protected:

@@ -31,7 +31,7 @@ void MergedUniverseLogger::stop()
     closeFile();
 }
 
-void MergedUniverseLogger::levelsChanged()
+void MergedUniverseLogger::levelsChanged(const QBitArray changes)
 {
     //Must have valid stream and listener set up via start()
     //Also possible that this is getting called as we're wrapping up in stop()

@@ -33,8 +33,9 @@ UniverseDisplay::UniverseDisplay(QWidget *parent) : GridWidget(parent)
 void UniverseDisplay::setUniverse(int universe)
 {
     m_listener = sACNManager::getInstance()->getListener(universe);
-    connect(m_listener.data(), SIGNAL(levelsChanged()), this, SLOT(levelsChanged()));
-    levelsChanged();
+    connect(m_listener.data(), &sACNListener::levelsChanged,
+            this, &UniverseDisplay::levelsChanged);
+    levelsChanged(QBitArray());
 }
 
 void UniverseDisplay::pause()
@@ -42,8 +43,10 @@ void UniverseDisplay::pause()
     m_listener->disconnect(this);
 }
 
-void UniverseDisplay::levelsChanged()
+void UniverseDisplay::levelsChanged(const QBitArray changes)
 {
+    Q_UNUSED(changes);
+
     if(!m_listener)
         return;
 
@@ -101,7 +104,7 @@ void UniverseDisplay::setFlickerFinder(bool on)
     }
     else
     {
-        levelsChanged();
+        levelsChanged(QBitArray());
     }
     update();
 }

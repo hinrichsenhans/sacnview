@@ -83,7 +83,7 @@ void UniverseView::startListening(int universe)
     connect(m_listener.data(), SIGNAL(sourceFound(sACNSource*)), this, SLOT(sourceOnline(sACNSource*)));
     connect(m_listener.data(), SIGNAL(sourceLost(sACNSource*)), this, SLOT(sourceOffline(sACNSource*)));
     connect(m_listener.data(), SIGNAL(sourceChanged(sACNSource*)), this, SLOT(sourceChanged(sACNSource*)));
-    connect(m_listener.data(), SIGNAL(levelsChanged()), this, SLOT(levelsChanged()));
+    connect(m_listener.data(), SIGNAL(levelsChanged(QBitArray)), this, SLOT(levelsChanged(QBitArray)));
 
     if(ui->sbUniverse->value()!=universe)
         ui->sbUniverse->setValue(universe);
@@ -144,8 +144,10 @@ void UniverseView::sourceOffline(sACNSource *source)
     sourceChanged(source);
 }
 
-void UniverseView::levelsChanged()
+void UniverseView::levelsChanged(const QBitArray changes)
 {
+    Q_UNUSED(changes);
+
     if(!m_listener) return;
     if(m_selectedAddress>-1)
         selectedAddressChanged(m_selectedAddress);
