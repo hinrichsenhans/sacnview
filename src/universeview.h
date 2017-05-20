@@ -46,6 +46,7 @@ protected slots:
     void levelsChanged();
     void selectedAddressChanged(int address);
     void on_btnStartFlickerFinder_pressed();
+    void on_btnOpenLogWindow_pressed();
 protected:
     virtual void resizeEvent(QResizeEvent *event);
     virtual void showEvent(QShowEvent *event);

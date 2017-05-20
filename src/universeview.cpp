@@ -20,6 +20,7 @@
 #include "preferences.h"
 #include "consts.h"
 #include "flickerfinderinfoform.h"
+#include "levellogwindow.h"
 
 #include <QFileDialog>
 #include <QStandardPaths>
@@ -322,4 +323,10 @@ void UniverseView::on_btnStartFlickerFinder_pressed()
         ui->universeDisplay->setFlickerFinder(true);
         ui->btnStartFlickerFinder->setText(tr("Stop Flicker Finder"));
     }
+}
+
+void UniverseView::on_btnOpenLogWindow_pressed()
+{
+    LevelLogWindow l;
+    l.exec();
 }

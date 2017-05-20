@@ -63,7 +63,8 @@ SOURCES += src/main.cpp\
     src/snapshot.cpp \
     src/commandline.cpp \
     src/multiuniverse.cpp \
-    src/flickerfinderinfoform.cpp
+    src/flickerfinderinfoform.cpp \
+    src/levellogwindow.cpp
 	
 HEADERS  += src/mdimainwindow.h \
     src/scopewindow.h \
@@ -96,7 +97,8 @@ HEADERS  += src/mdimainwindow.h \
     src/commandline.h \
     src/fontdata.h \
     src/multiuniverse.h \
-    src/flickerfinderinfoform.h
+    src/flickerfinderinfoform.h \
+    src/levellogwindow.h
 
 FORMS    += ui/mdimainwindow.ui \
     ui/scopewindow.ui \
@@ -108,7 +110,8 @@ FORMS    += ui/mdimainwindow.ui \
     ui/aboutdialog.ui \
     ui/snapshot.ui \
     ui/multiuniverse.ui \
-    ui/flickerfinderinfoform.ui
+    ui/flickerfinderinfoform.ui \
+    ui/levellogwindow.ui
 
 RESOURCES += \
     res/resources.qrc
