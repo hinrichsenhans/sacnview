@@ -20,7 +20,6 @@
 #include <QHostAddress>
 #include <QNetworkInterface>
 #include <QColor>
-#include "deftypes.h"
 #include "CID.h"
 #include "consts.h"
 
@@ -40,7 +39,8 @@ static const QString S_MAINWINDOWGEOM("Main Window Geometry");
 static const QString S_SUBWINDOWLIST("Sub Window");
 static const QString S_SUBWINDOWNAME("SubWindow Name");
 static const QString S_SUBWINDOWGEOM("SubWindow Geometry");
-
+static const QString S_LISTEN_ALL("Listen All");
+static const QString S_THEME("Theme");
 
 struct MDIWindowInfo
 {
@@ -60,6 +60,14 @@ public:
             TOTAL_NUM_OF_FORMATS = 3
         };
 
+    enum Theme {
+        THEME_LIGHT,
+        THEME_DARK,
+        TOTAL_NUM_OF_THEMES
+    };
+    static const QStringList ThemeDescriptions;
+
+
     /**
      * @brief getInstance - returns the instance of the Preferences class
      * @return the instance
@@ -75,9 +83,16 @@ public:
     /**
      * @brief defaultInterfaceAvailable - returns whether the default interface selected by the user
      * is available
-     * @return
+     * @return true/false
      */
     bool defaultInterfaceAvailable();
+
+    /**
+     * @brief interfaceSuitable - returns whether the interface is suitable for sACN
+     * @param inter - the interface to check
+     * @return true/false
+     */
+    bool interfaceSuitable(QNetworkInterface *inter);
 
 
     QColor colorForCID(const CID &cid);
@@ -93,6 +108,8 @@ public:
     void SetSaveWindowLayout(bool value);
     void SetMainWindowGeometry(const QByteArray &value);
     void SetSavedWindows(QList<MDIWindowInfo> values);
+    void SetNetworkListenAll(const bool &value);
+    void SetTheme(Theme theme);
 
     unsigned int GetDisplayFormat();
     unsigned int GetMaxLevel();
@@ -105,12 +122,12 @@ public:
     bool GetSaveWindowLayout();
     QByteArray GetMainWindowGeometry();
     QList<MDIWindowInfo> GetSavedWindows();
-
+    bool GetNetworkListenAll();
+    Theme GetTheme();
 
     QString GetFormattedValue(unsigned int nLevelInDecimal, bool decorated = false);
 
     void savePreferences();
-
 
     bool RESTART_APP;
 public slots:
@@ -120,6 +137,7 @@ private:
     ~Preferences();
     static Preferences *m_instance;
     QNetworkInterface m_interface;
+    bool m_interfaceListenAll;
     QHash<CID, QColor> m_cidToColor;
 
     unsigned int m_nDisplayFormat;
@@ -132,6 +150,7 @@ private:
     bool m_saveWindowLayout;
     QByteArray m_mainWindowGeometry;
     QList<MDIWindowInfo> m_windowInfo;
+    Theme m_theme;
 
     void loadPreferences();
 

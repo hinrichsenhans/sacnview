@@ -15,20 +15,24 @@
   </property>
   <property name="styleSheet">
    <string notr="true">QSpinBox {
-border: 1px solid #cfcfcf; 
+border: 1px solid palette(mid); 
 height: 22px;
-} 
+}
+
+QSpinBox:focus {
+border: 1px solid palette(highlight); 
+}
 
 QSpinBox:disabled{
-border: 1px solid grey;
+border: 1px solid palette(dark);
 }
 
 QSpinBox::up-button {
 subcontrol-position: right;
 width: 22px;
 height: 22px;
-background-color:#cfcfcf;
-border-image: url(:/icons/spin_up.png) 1;
+background-color:palette(button);
+border-image: url(:/icons/spin_up_dark.png) 1;
 }
 
  QSpinBox::up-button:disabled {
@@ -39,8 +43,8 @@ QSpinBox::down-button {
 subcontrol-position: left;
 width: 22px;
 height: 22px;
-background-color:#cfcfcf;
-border-image: url(:/icons/spin_down.png) 1;
+background-color:palette(button);
+border-image: url(:/icons/spin_down_dark.png) 1;
 }
 
 QSpinBox::down-button:disabled {
@@ -76,11 +80,19 @@ background-color:grey;
    <addaction name="actionTranmsit"/>
    <addaction name="actionSnapshot"/>
    <addaction name="actionMultiUniverse"/>
+   <addaction name="actionPCAPPlayback"/>
    <addaction name="separator"/>
    <addaction name="actionSettings"/>
    <addaction name="actionAbout"/>
   </widget>
-  <widget class="QStatusBar" name="statusBar"/>
+  <widget class="QStatusBar" name="statusBar">
+   <property name="sizePolicy">
+    <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+     <horstretch>0</horstretch>
+     <verstretch>0</verstretch>
+    </sizepolicy>
+   </property>
+  </widget>
   <widget class="QDockWidget" name="dwUnivList">
    <property name="features">
     <set>QDockWidget::DockWidgetFloatable|QDockWidget::DockWidgetMovable</set>
@@ -240,6 +252,21 @@ background-color:grey;
    </property>
    <property name="text">
     <string>Send Multiple Universes</string>
+   </property>
+   <property name="toolTip">
+    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Open a window allowing easy setup of multiple sources of sACN data at once&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+   </property>
+  </action>
+  <action name="actionPCAPPlayback">
+   <property name="icon">
+    <iconset resource="../res/resources.qrc">
+     <normaloff>:/icons/capture_playback.png</normaloff>:/icons/capture_playback.png</iconset>
+   </property>
+   <property name="text">
+    <string>Playback</string>
+   </property>
+   <property name="toolTip">
+    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Playback data captured with Wireshark (or other tools that produce a PCAP file format). sACN Data will be played back with the same timing as when it was captured, allowing precise recreation of fades.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
    </property>
   </action>
  </widget>

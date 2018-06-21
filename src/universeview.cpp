@@ -61,6 +61,11 @@ UniverseView::UniverseView(int universe, QWidget *parent) :
     connect(ui->universeDisplay, SIGNAL(selectedCellChanged(int)), this, SLOT(selectedAddressChanged(int)));
     connect(ui->universeDisplay, SIGNAL(cellDoubleClick(quint16)), this, SLOT(openBigDisplay(quint16)));
 
+    connect(ui->btnShowPriority, &QPushButton::toggled,
+            ui->universeDisplay, &UniverseDisplay::setShowChannelPriority);
+    connect(ui->universeDisplay, &UniverseDisplay::showChannelPriorityChanged,
+            ui->btnShowPriority, &QPushButton::setChecked);
+
     ui->btnGo->setEnabled(true);
     ui->btnPause->setEnabled(false);
     ui->sbUniverse->setEnabled(true);
@@ -80,6 +85,8 @@ void UniverseView::startListening(int universe)
     ui->btnPause->setEnabled(true);
     ui->sbUniverse->setEnabled(false);
     m_listener = sACNManager::getInstance()->getListener(universe);
+    connect(m_listener.data(), SIGNAL(listenerStarted(int)), this, SLOT(listenerStarted(int)));
+    checkBind();
     ui->universeDisplay->setUniverse(universe);
 
     // Add the existing sources
@@ -87,7 +94,6 @@ void UniverseView::startListening(int universe)
     {
         sourceOnline(m_listener->source(i));
     }
-
     connect(m_listener.data(), SIGNAL(sourceFound(sACNSource*)), this, SLOT(sourceOnline(sACNSource*)));
     connect(m_listener.data(), SIGNAL(sourceLost(sACNSource*)), this, SLOT(sourceOffline(sACNSource*)));
     connect(m_listener.data(), SIGNAL(sourceChanged(sACNSource*)), this, SLOT(sourceChanged(sACNSource*)));
@@ -100,6 +106,29 @@ void UniverseView::startListening(int universe)
 void UniverseView::on_btnGo_pressed()
 {
     startListening(ui->sbUniverse->value());
+}
+
+void UniverseView::checkBind()
+{
+    bool bindOk(m_listener->getBindStatus().multicast != sACNListener::BIND_FAILED);
+    bindOk &= m_listener->getBindStatus().unicast != sACNListener::BIND_FAILED;
+
+    if (bindOk || m_bindWarningShown)
+        return;
+
+    QMessageBox msgBox;
+    msgBox.setIcon(QMessageBox::Warning);
+    msgBox.setStandardButtons(QMessageBox::Ok);
+    msgBox.setText(tr("Errors binding to interface\r\n\r\nResults will be inaccurate\r\nPossible reasons include permission issues\r\nor other applications\r\n\r\nSee diagnostics for more info"));
+    m_bindWarningShown = true;
+    msgBox.exec();
+}
+
+void UniverseView::listenerStarted(int universe)
+{
+    Q_UNUSED(universe);
+
+    checkBind();
 }
 
 void UniverseView::sourceChanged(sACNSource *source)
@@ -124,8 +153,18 @@ void UniverseView::sourceChanged(sACNSource *source)
         ui->twSources->item(row,COL_PREVIEW)->setText(source->isPreview ? tr("Yes") : tr("No"));
     ui->twSources->item(row,COL_IP)->setText(source->ip.toString());
     ui->twSources->item(row,COL_FPS)->setText(QString::number((source->fps)));
-    ui->twSources->item(row,COL_SEQ_ERR)->setText(QString::number(source->seqErr));
-    ui->twSources->item(row,COL_JUMPS)->setText(QString::number(source->jumps));
+    {
+        // Seq Errors
+        QLabel* lbl_SEQ_ERR = qobject_cast<QLabel *>(
+                    ui->twSources->cellWidget(row,COL_SEQ_ERR)->layout()->itemAt(0)->widget());
+        lbl_SEQ_ERR->setText(QString::number(source->seqErr));
+    }
+    {
+        // Jumps
+        QLabel* lbl_SEQ_ERR = qobject_cast<QLabel *>(
+                    ui->twSources->cellWidget(row,COL_JUMPS)->layout()->itemAt(0)->widget());
+        lbl_SEQ_ERR->setText(QString::number(source->jumps));
+    }
     if (source->doing_dmx) {
         ui->twSources->item(row,COL_ONLINE)->setText(onlineToString(source->src_valid));
     } else {
@@ -152,14 +191,67 @@ void UniverseView::sourceOnline(sACNSource *source)
     ui->twSources->setItem(row,COL_PREVIEW, new QTableWidgetItem() );
     ui->twSources->setItem(row,COL_IP,      new QTableWidgetItem() );
     ui->twSources->setItem(row,COL_FPS,     new QTableWidgetItem() );
-    ui->twSources->setItem(row,COL_SEQ_ERR, new QTableWidgetItem() );
-    ui->twSources->setItem(row,COL_JUMPS,   new QTableWidgetItem() );
+
+    // Seq errors, with reset
+    {
+        QWidget* pWidget = new QWidget();
+        QHBoxLayout* pLayout = new QHBoxLayout(pWidget);
+        pLayout->setAlignment(Qt::AlignCenter);
+        pLayout->setContentsMargins(3,0,0,0);
+
+        // Count
+        QLabel* lbl_seq = new QLabel();
+        lbl_seq->setText(QString::number(0));
+        pLayout->addWidget(lbl_seq);
+
+        // Reset Button
+        QPushButton* btn_seq = new QPushButton();
+        btn_seq->setText(tr("Reset"));
+        pLayout->addWidget(btn_seq);
+
+        // Connect button
+        connect(btn_seq, &QPushButton::clicked, [=]() {
+            source->resetSeqErr();
+            this->sourceChanged(source);
+        });
+
+        // Display!
+        pWidget->setLayout(pLayout);
+        ui->twSources->setCellWidget(row,COL_SEQ_ERR, pWidget);
+    }
+
+    // Jump counter, with reset
+    {
+        QWidget* pWidget = new QWidget();
+        QHBoxLayout* pLayout = new QHBoxLayout(pWidget);
+        pLayout->setAlignment(Qt::AlignCenter);
+        pLayout->setContentsMargins(3,0,0,0);
+
+        // Count
+        QLabel* lbl_jumps = new QLabel();
+        lbl_jumps->setText(QString::number(0));
+        pLayout->addWidget(lbl_jumps);
+
+        // Reset Button
+        QPushButton* btn_jumps = new QPushButton();
+        btn_jumps->setText(tr("Reset"));
+        pLayout->addWidget(btn_jumps);
+
+        // Connect button
+        connect(btn_jumps, &QPushButton::clicked, [=]() {
+            source->resetJumps();
+            this->sourceChanged(source);
+        });
+
+        pWidget->setLayout(pLayout);
+        ui->twSources->setCellWidget(row,COL_JUMPS, pWidget);
+    }
+
     ui->twSources->setItem(row,COL_ONLINE,  new QTableWidgetItem() );
     ui->twSources->setItem(row,COL_VER,     new QTableWidgetItem() );
     ui->twSources->setItem(row,COL_DD,      new QTableWidgetItem() );
 
     sourceChanged(source);
-
 }
 
 void UniverseView::sourceOffline(sACNSource *source)
@@ -298,6 +390,7 @@ void UniverseView::on_btnPause_pressed()
     ui->btnGo->setEnabled(true);
     ui->btnPause->setEnabled(false);
     ui->sbUniverse->setEnabled(true);
+    m_bindWarningShown = false;
 }
 
 void UniverseView::on_btnLogToFile_pressed()

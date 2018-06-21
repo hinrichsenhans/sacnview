@@ -8,7 +8,7 @@ matrix:
         addons:
           apt:
             sources:
-              - sourceline: 'ppa:beineri/opt-qt592-trusty'
+              - sourceline: 'ppa:beineri/opt-qt594-trusty'
             packages:
               # FPM dependencies
               - build-essential
@@ -19,6 +19,8 @@ matrix:
               - qt59multimedia
 
         install:
+            # PCap
+            - sudo apt-get -y install libpcap-dev
             # Install FPM
             - cd install/linux/ && cp _FPM_Makefile Makefile && make package && sudo dpkg -i fpm*.deb && fpm --version && cd ../../
             # QT
@@ -37,6 +39,8 @@ matrix:
         before_install:
           - brew update
         install:
+          # PCap
+          - brew install libpcap
           # QT
           - brew install qt
           - brew link --force qt

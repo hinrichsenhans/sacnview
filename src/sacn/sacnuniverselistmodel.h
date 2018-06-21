@@ -11,7 +11,6 @@
 #include <QMutex>
 #include <QReadWriteLock>
 #include <list>
-#include "deftypes.h"
 #include "CID.h"
 #include "sacnlistener.h"
 
@@ -65,6 +64,7 @@ protected:
     virtual QModelIndex parent(const QModelIndex &index) const;
 
 public slots:
+    void listenerStarted(int universe);
     void sourceOnline(sACNSource *source);
     void sourceChanged(sACNSource *source);
     void sourceOffline(sACNSource *source);
@@ -73,6 +73,7 @@ private:
     mutable QReadWriteLock rwlock_ModelIndex;
     QMutex mutex_readPendingDatagrams;
     QList<sACNUniverseInfo *>m_universes;
+    QList<bool> m_universeBindOk;
     int m_start;
     QTimer *m_checkTimeoutTimer;
     QList<QSharedPointer<sACNListener>> m_listeners;

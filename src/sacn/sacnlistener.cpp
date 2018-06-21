@@ -16,8 +16,8 @@
 #include "sacnlistener.h"
 #include "streamcommon.h"
 #include "preferences.h"
-#include "deftypes.h"
 #include "defpack.h"
+#include "preferences.h"
 #include <QDebug>
 #include <QThread>
 #include <QPoint>
@@ -34,6 +34,9 @@
 
 //The time during which to sample
 #define SAMPLE_TIME 1500
+
+//Background merge interval
+#define BACKGROUND_MERGE 500
 
 sACNListener::sACNListener(int universe, QObject *parent) : QObject(parent),
     m_universe(universe),
@@ -59,24 +62,22 @@ void sACNListener::startReception()
     qDebug() << "sACNListener" << QThread::currentThreadId() << ": Starting universe" << m_universe;
 
     // Clear the levels array
-    memset(&m_last_levels, -1, 512);
+    memset(&m_last_levels, -1, sizeof(m_last_levels)/sizeof(m_last_levels[0]));
 
-    // Listen multicast
-    m_sockets.push_back(new sACNRxSocket());
-    if (m_sockets.back()->bindMulticast(m_universe)) {
-        connect(m_sockets.back(), SIGNAL(readyRead()), this, SLOT(readPendingDatagrams()), Qt::DirectConnection);
-    } else {
-       // Failed to bind,
-       m_sockets.pop_back();
-    }
+    if (Preferences::getInstance()->GetNetworkListenAll()) {
+        // Listen on ALL interfaces
+        foreach(QNetworkInterface interface, QNetworkInterface::allInterfaces())
+        {
+            // If the interface is ok for use...
+            if(Preferences::getInstance()->interfaceSuitable(&interface))
+            {
+                startInterface(interface);
+            }
+        }
 
-    // Listen unicast
-    m_sockets.push_back(new sACNRxSocket());
-    if (m_sockets.back()->bindUnicast()) {
-        connect(m_sockets.back(), SIGNAL(readyRead()), this, SLOT(readPendingDatagrams()), Qt::DirectConnection);
     } else {
-       // Failed to bind
-       m_sockets.pop_back();
+        // Listen only to selected interface
+        startInterface(Preferences::getInstance()->networkInterface());
     }
 
     // Start intial sampling
@@ -86,16 +87,43 @@ void sACNListener::startReception()
     connect(m_initalSampleTimer, SIGNAL(timeout()), this, SLOT(sampleExpiration()), Qt::DirectConnection);
     m_initalSampleTimer->start();
 
-    // Merge is performed whenever the thread has time
+    // Merge is performed whenever a packet arrives and every BACKGROUND_MERGE interval
     m_elapsedTime.start();
     m_mergesPerSecondTimer.start();
     m_mergeTimer = new QTimer(this);
-    m_mergeTimer->setInterval(1);
+    m_mergeTimer->setInterval(BACKGROUND_MERGE);
     connect(m_mergeTimer, SIGNAL(timeout()), this, SLOT(performMerge()), Qt::DirectConnection);
     connect(m_mergeTimer, SIGNAL(timeout()), this, SLOT(checkSourceExpiration()), Qt::DirectConnection);
     m_mergeTimer->start();
+
+    // Everything is set
+    emit listenerStarted(m_universe);
 }
 
+void sACNListener::startInterface(QNetworkInterface iface)
+{
+    // Listen multicast
+    m_sockets.push_back(new sACNRxSocket(iface));
+    if (m_sockets.back()->bindMulticast(m_universe)) {
+        connect(m_sockets.back(), SIGNAL(readyRead()), this, SLOT(readPendingDatagrams()), Qt::DirectConnection);
+        m_bindStatus.multicast = eBindStatus::BIND_OK;
+    } else {
+       // Failed to bind,
+       m_sockets.pop_back();
+       m_bindStatus.multicast = eBindStatus::BIND_FAILED;
+    }
+
+    // Listen unicast
+    m_sockets.push_back(new sACNRxSocket(iface));
+    if (m_sockets.back()->bindUnicast()) {
+        connect(m_sockets.back(), SIGNAL(readyRead()), this, SLOT(readPendingDatagrams()), Qt::DirectConnection);
+        m_bindStatus.unicast = eBindStatus::BIND_OK;
+    } else {
+       // Failed to bind
+       m_sockets.pop_back();
+       m_bindStatus.unicast = eBindStatus::BIND_FAILED;
+    }
+}
 
 void sACNListener::sampleExpiration()
 {
@@ -160,27 +188,27 @@ void sACNListener::readPendingDatagrams()
     }
 }
 
-void sACNListener::processDatagram(QByteArray data, QHostAddress receiver, QHostAddress sender)
+void sACNListener::processDatagram(QByteArray data, QHostAddress receiver, QHostAddress sender, bool alwaysPass)
 {
     // Process packet
     CID source_cid;
-    uint1 start_code;
-    uint1 sequence;
-    uint2 universe;
-    uint2 slot_count;
-    uint1* pdata;
+    quint8 start_code;
+    quint8 sequence;
+    quint16 universe;
+    quint16 slot_count;
+    quint8* pdata;
     char source_name [SOURCE_NAME_SIZE];
-    uint1 priority;
+    quint8 priority;
     /*
      * These only apply to the ratified version of the spec, so we will hardwire
      * them to be 0 just in case they never get set.
     */
-    uint2 reserved = 0;
-    uint1 options = 0;
+    quint16 reserved = 0;
+    quint8 options = 0;
     bool preview = false;
-    uint1 *pbuf = (uint1*)data.data();
+    quint8 *pbuf = (quint8*)data.data();
 
-    if(!ValidateStreamHeader((uint1*)data.data(), data.length(), source_cid, source_name, priority,
+    if(!ValidateStreamHeader((quint8*)data.data(), data.length(), source_cid, source_name, priority,
             start_code, reserved, sequence, options, universe, slot_count, pdata))
     {
         // Recieved a packet but not valid. Log and discard
@@ -189,13 +217,13 @@ void sACNListener::processDatagram(QByteArray data, QHostAddress receiver, QHost
     }
 
     // Unpacks a uint4 from a known big endian buffer
-    int root_vect = UpackB4((uint1*)pbuf + ROOT_VECTOR_ADDR);
+    int root_vect = UpackB4((quint8*)pbuf + ROOT_VECTOR_ADDR);
 
     // Packet for the wrong universe on this socket?
     if(m_universe != universe)
     {
         // Was it unicast? Send to correct listner (if listening)
-        if (receiver.isMulticast())
+        if (!alwaysPass && receiver.isMulticast())
         {
             // Log and discard
             qDebug() << "sACNListener" << QThread::currentThreadId() << ": Wrong Universe and is multicast";
@@ -282,7 +310,7 @@ void sACNListener::processDatagram(QByteArray data, QHostAddress receiver, QHost
             //doing assignment to force the type sizes.  A negative number means
             //we got an "old" one, but we assume that anything really old is possibly
             //due the device having rebooted and starting the sequence over.
-            int1 result = ((int1)sequence) - ((int1)((*it)->lastseq));
+            qint8 result = ((qint8)sequence) - ((qint8)((*it)->lastseq));
             if(result!=1)
                 (*it)->jumps++;
             if((result <= 0) && (result > -20))
@@ -489,6 +517,9 @@ void sACNListener::processDatagram(QByteArray data, QHostAddress receiver, QHost
             emit sourceChanged(ps);
             ps->source_params_change = false;
         }
+
+        // Merge
+        performMerge();
     }
 }
 
